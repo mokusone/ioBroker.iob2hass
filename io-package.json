@@ -1,0 +1,102 @@
+{
+    "common": {
+        "name": "iob2hass",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "Initial scaffold",
+                "de": "Initiales Skelett"
+            }
+        },
+        "titleLang": {
+            "en": "ioBroker → Home Assistant Bridge",
+            "de": "ioBroker → Home Assistant Bridge"
+        },
+        "desc": {
+            "en": "Mirrors selected ioBroker datapoints into Home Assistant via MQTT-Discovery",
+            "de": "Spiegelt ausgewählte ioBroker-Datenpunkte per MQTT-Discovery nach Home Assistant"
+        },
+        "authors": ["mokusone <14061880+mokusone@users.noreply.github.com>"],
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "mode": "daemon",
+        "type": "general",
+        "compact": true,
+        "loglevel": "info",
+        "icon": "iob2hass.png",
+        "extIcon": "https://raw.githubusercontent.com/mokusone/ioBroker.iob2hass/main/admin/iob2hass.png",
+        "keywords": ["mqtt", "homeassistant", "bridge"],
+        "readme": "https://github.com/mokusone/ioBroker.iob2hass/blob/main/README.md",
+        "connectionType": "local",
+        "dataSource": "push",
+        "adminUI": {
+            "config": "json"
+        },
+        "dependencies": [{ "js-controller": ">=5.0.19" }],
+        "globalDependencies": [{ "admin": ">=6.13.16" }]
+    },
+    "native": {
+        "mqtt": {
+            "host": "core-mosquitto",
+            "port": 1883,
+            "user": "",
+            "password": "",
+            "tls": false,
+            "baseTopic": "iob2hass",
+            "discoveryPrefix": "homeassistant"
+        },
+        "mode": "discover",
+        "entityPrefix": "iob_",
+        "autoDeleteOrphans": false,
+        "markAsDiagnostic": false,
+        "verboseDiscoverLog": false,
+        "republishOnBoot": true,
+        "whitelist": [],
+        "overrides": []
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": { "role": "indicator.connected", "name": "MQTT connection", "type": "boolean", "read": true, "write": false, "def": false },
+            "native": {}
+        },
+        {
+            "_id": "info.heartbeat",
+            "type": "state",
+            "common": { "role": "value", "name": "Last heartbeat (epoch ms)", "type": "number", "read": true, "write": false, "def": 0 },
+            "native": {}
+        },
+        {
+            "_id": "stats.subscribed",
+            "type": "state",
+            "common": { "role": "value", "name": "Subscribed patterns", "type": "number", "read": true, "write": false, "def": 0 },
+            "native": {}
+        },
+        {
+            "_id": "stats.published",
+            "type": "state",
+            "common": { "role": "value", "name": "Published states", "type": "number", "read": true, "write": false, "def": 0 },
+            "native": {}
+        },
+        {
+            "_id": "stats.unmapped",
+            "type": "state",
+            "common": { "role": "value", "name": "Unmapped events (discover mode)", "type": "number", "read": true, "write": false, "def": 0 },
+            "native": {}
+        },
+        {
+            "_id": "stats.errors",
+            "type": "state",
+            "common": { "role": "value", "name": "Errors", "type": "number", "read": true, "write": false, "def": 0 },
+            "native": {}
+        },
+        {
+            "_id": "cmd.cleanup",
+            "type": "state",
+            "common": { "role": "button", "name": "Cleanup all Discovery topics (use before uninstall)", "type": "boolean", "read": false, "write": true, "def": false },
+            "native": {}
+        }
+    ]
+}
