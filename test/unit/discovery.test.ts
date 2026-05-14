@@ -76,6 +76,12 @@ describe('detectDeviceClass', () => {
     it('unknown → undefined', () => {
         assert.equal(detectDeviceClass(obj({ role: 'state' })), undefined);
     });
+    it('unit wins over role conflict (Shelly EM-3: role=value.power, unit=Wh → energy)', () => {
+        assert.equal(detectDeviceClass(obj({ role: 'value.power', unit: 'Wh' })), 'energy');
+    });
+    it('unit=W with role=value.energy → power (unit wins)', () => {
+        assert.equal(detectDeviceClass(obj({ role: 'value.energy', unit: 'W' })), 'power');
+    });
 });
 
 describe('detectStateClass', () => {

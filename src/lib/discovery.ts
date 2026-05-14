@@ -43,16 +43,39 @@ export function detectDeviceClass(obj: IobStateObjectMinimal): string | undefine
     const role = obj.common.role ?? '';
     const unit = obj.common.unit ?? '';
 
-    if (role.includes('value.power') || POWER_UNITS.has(unit)) {
-        return 'power';
-    }
-    if (role.includes('value.energy') || ENERGY_UNITS.has(unit)) {
+    // Unit takes precedence over role. Units are unambiguous; roles in many
+    // ioBroker adapters are sloppily set (e.g. Shelly EM-3 marks energy
+    // counters as role=value.power but unit=Wh — unit wins, role is junk).
+    if (ENERGY_UNITS.has(unit)) {
         return 'energy';
     }
-    if (role.includes('value.temperature') || TEMP_UNITS.has(unit)) {
+    if (POWER_UNITS.has(unit)) {
+        return 'power';
+    }
+    if (TEMP_UNITS.has(unit)) {
         return 'temperature';
     }
-    if (role.includes('value.humidity') || (role.includes('humidity') && unit === '%')) {
+    if (unit === 'V') {
+        return 'voltage';
+    }
+    if (unit === 'A') {
+        return 'current';
+    }
+    if (unit === '%' && (role.includes('humidity') || role.includes('value.humidity'))) {
+        return 'humidity';
+    }
+
+    // No unit hint — fall back to role.
+    if (role.includes('value.energy')) {
+        return 'energy';
+    }
+    if (role.includes('value.power')) {
+        return 'power';
+    }
+    if (role.includes('value.temperature')) {
+        return 'temperature';
+    }
+    if (role.includes('value.humidity')) {
         return 'humidity';
     }
     if (role.includes('sensor.motion')) {
@@ -61,10 +84,10 @@ export function detectDeviceClass(obj: IobStateObjectMinimal): string | undefine
     if (role.includes('sensor.window') || role.includes('sensor.door')) {
         return 'opening';
     }
-    if (role.includes('value.voltage') || unit === 'V') {
+    if (role.includes('value.voltage')) {
         return 'voltage';
     }
-    if (role.includes('value.current') || unit === 'A') {
+    if (role.includes('value.current')) {
         return 'current';
     }
     return undefined;
