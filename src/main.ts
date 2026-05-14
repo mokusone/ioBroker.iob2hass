@@ -163,7 +163,11 @@ class Iob2HassAdapter extends Adapter {
     private async publishMirrorState(m: MirrorEntry, val: unknown): Promise<void> {
         const topic = `${this.runtime.mqtt.baseTopic}/state/${m.uniqueId}`;
         const payload = typeof val === 'string' ? val : JSON.stringify(val);
-        await this.mqtt.publish(topic, payload);
+        // Retained: HA must see the current value immediately after reconnect,
+        // including after HA restarts independently from the adapter. Without
+        // retain the entity stays "unknown" until the next ioBroker state
+        // change — for rarely-changing values that may be forever.
+        await this.mqtt.publishRetained(topic, payload);
         await this.statsTracker.incr('published');
     }
 
@@ -193,10 +197,14 @@ class Iob2HassAdapter extends Adapter {
         }
 
         if (isOwnWrite(state, this.selfId)) {
+            this.log.debug(`stateChange ${id} ignored (own write)`);
             return;
         }
         const uniqueId = buildUniqueId(id, this.runtime.entityPrefix);
         const m = this.mirrors.get(uniqueId);
+        this.log.debug(
+            `stateChange id=${id} uniqueId=${uniqueId} mirror=${m ? 'yes' : 'no'} val=${JSON.stringify(state.val)} ack=${state.ack} from=${state.from}`,
+        );
         if (!m) {
             if (this.runtime.mode === 'discover') {
                 await this.statsTracker.incr('unmapped');

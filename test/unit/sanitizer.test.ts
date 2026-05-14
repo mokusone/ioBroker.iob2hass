@@ -20,6 +20,18 @@ describe('sanitize', () => {
             'shelly_0_shsw1_abc_relay0_switch',
         );
     });
+    it('transliterates German umlauts (ä→ae, ö→oe, ü→ue, ß→ss)', () => {
+        assert.equal(sanitize('Ladegerät'), 'ladegeraet');
+        assert.equal(sanitize('Tür'), 'tuer');
+        assert.equal(sanitize('Straße'), 'strasse');
+        assert.equal(sanitize('Öl'), 'oel');
+    });
+    it('transliterates in realistic alias path', () => {
+        assert.equal(
+            sanitize('alias.0.HN5.STATES.Personen.Sebastian.Ladegerät.Handy'),
+            'alias_0_hn5_states_personen_sebastian_ladegeraet_handy',
+        );
+    });
 });
 
 describe('buildUniqueId', () => {

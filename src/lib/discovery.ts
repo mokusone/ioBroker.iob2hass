@@ -104,17 +104,6 @@ export function detectStateClass(obj: IobStateObjectMinimal): string | undefined
     return undefined;
 }
 
-function resolveName(_dpId: string, obj: IobStateObjectMinimal, uniqueId: string): string {
-    const n = obj.common.name;
-    if (typeof n === 'string' && n.length > 0) {
-        return n;
-    }
-    if (n && typeof n === 'object') {
-        return n.en ?? n.de ?? Object.values(n)[0] ?? uniqueId;
-    }
-    return uniqueId;
-}
-
 function applyOverrides(
     target: Record<string, unknown>,
     dpId: string,
@@ -191,7 +180,12 @@ export function buildConfig(
     const payload: Record<string, unknown> = {
         unique_id: uniqueId,
         object_id: uniqueId,
-        name: resolveName(dpId, obj, uniqueId),
+        // name=null tells HA to use device.name for the friendly name and
+        // entity_id, instead of "<device>_<entity>". Combined with a per-DP
+        // device whose name IS the full sanitized path, this yields
+        // entity_ids like switch.iob_alias_0_hn5_..._handy — preserving
+        // the full ioBroker DP path in the HA id.
+        name: null,
         state_topic: `${config.mqtt.baseTopic}/state/${uniqueId}`,
         // Attribute topic carries the original ioBroker DP id and metadata
         // so the user can reverse-look-up the source without losing info to
@@ -203,15 +197,17 @@ export function buildConfig(
             payload_not_available: 'offline',
         },
         device: {
-            identifiers: [`iob2hass-${instance}`],
-            // device.name becomes the entity-id prefix in HA's auto-naming.
-            // We derive it from entityPrefix (without trailing underscore) so
-            // the resulting entity_ids are <domain>.<prefix>_<entity>, e.g.
-            // binary_sensor.iob_handy — matching the architecture's iob_-prefix
-            // convention and the iobroker.hass-Fork filter pattern *.iob_*.
-            name: config.entityPrefix.replace(/_+$/, '') || 'iob',
+            // Per-DP unique identifier — every mirror becomes its own HA
+            // device. The device name carries the full sanitized DP path so
+            // HA composes entity_id = <domain>.<device-name>.
+            identifiers: [`iob2hass-${instance}-${uniqueId}`],
+            name: uniqueId,
             manufacturer: 'iob2hass',
-            model: 'ioBroker Bridge',
+            model: 'ioBroker Mirror',
+            // via_device groups all mirror devices visually in HA under one
+            // logical hub. The hub itself is registered implicitly by HA on
+            // first sighting.
+            via_device: `iob2hass-${instance}`,
         },
     };
 

@@ -112,21 +112,22 @@ const baseConfig: RuntimeConfig = {
 };
 
 describe('buildConfig', () => {
-    it('builds switch with availability + device + command_topic', () => {
+    it('builds switch with availability + per-DP device + command_topic + name=null', () => {
         const cfg = buildConfig('shelly.0.Relay0', obj({ type: 'boolean', write: true, name: 'Relay 0' }), baseConfig, 0);
         assert.equal(cfg.domain, 'switch');
         const p = cfg.payload;
         assert.equal(p.unique_id, 'iob_shelly_0_relay0');
         assert.equal(p.object_id, 'iob_shelly_0_relay0');
-        assert.equal(p.name, 'Relay 0');
+        assert.equal(p.name, null);
         assert.equal(p.state_topic, 'iob2hass/state/iob_shelly_0_relay0');
         assert.equal(p.command_topic, 'iob2hass/cmd/iob_shelly_0_relay0');
         assert.equal(p.json_attributes_topic, 'iob2hass/attrs/iob_shelly_0_relay0');
         assert.deepEqual(p.availability, { topic: 'iob2hass/status', payload_available: 'online', payload_not_available: 'offline' });
         const dev = p.device as Record<string, unknown>;
-        assert.deepEqual(dev.identifiers, ['iob2hass-0']);
-        assert.equal(dev.name, 'iob');  // derived from entityPrefix=iob_
-        assert.equal(dev.model, 'ioBroker Bridge');
+        assert.deepEqual(dev.identifiers, ['iob2hass-0-iob_shelly_0_relay0']);
+        assert.equal(dev.name, 'iob_shelly_0_relay0');
+        assert.equal(dev.model, 'ioBroker Mirror');
+        assert.equal(dev.via_device, 'iob2hass-0');
     });
 
     it('sensor for read-only number with power detection', () => {
@@ -138,9 +139,16 @@ describe('buildConfig', () => {
         assert.equal(cfg.payload.command_topic, undefined);
     });
 
-    it('falls back name to sanitized id when common.name missing', () => {
-        const cfg = buildConfig('shelly.0.x', obj({ type: 'boolean', write: false }), baseConfig, 0);
-        assert.equal(cfg.payload.name, 'iob_shelly_0_x');
+    it('alias path with umlaut transliterates to ae', () => {
+        const cfg = buildConfig(
+            'alias.0.HN5.STATES.Personen.Sebastian.Ladegerät.Handy',
+            obj({ type: 'boolean', write: true }),
+            baseConfig,
+            0,
+        );
+        assert.equal(cfg.payload.unique_id, 'iob_alias_0_hn5_states_personen_sebastian_ladegeraet_handy');
+        const dev = cfg.payload.device as Record<string, unknown>;
+        assert.equal(dev.name, 'iob_alias_0_hn5_states_personen_sebastian_ladegeraet_handy');
     });
 
     it('override unit patches auto-detected unit', () => {
