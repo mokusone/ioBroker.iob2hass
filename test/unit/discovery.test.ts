@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { selectDomain, detectDeviceClass, detectStateClass, buildConfig } from '../../src/lib/discovery';
+import { selectDomain, detectDeviceClass, detectStateClass, buildConfig, buildAttributes } from '../../src/lib/discovery';
 import type { IobStateObjectMinimal, RuntimeConfig } from '../../src/types';
 
 function obj(common: Partial<IobStateObjectMinimal['common']>): IobStateObjectMinimal {
@@ -121,6 +121,7 @@ describe('buildConfig', () => {
         assert.equal(p.name, 'Relay 0');
         assert.equal(p.state_topic, 'iob2hass/state/iob_shelly_0_relay0');
         assert.equal(p.command_topic, 'iob2hass/cmd/iob_shelly_0_relay0');
+        assert.equal(p.json_attributes_topic, 'iob2hass/attrs/iob_shelly_0_relay0');
         assert.deepEqual(p.availability, { topic: 'iob2hass/status', payload_available: 'online', payload_not_available: 'offline' });
         const dev = p.device as Record<string, unknown>;
         assert.deepEqual(dev.identifiers, ['iob2hass-0']);
@@ -178,6 +179,18 @@ describe('buildConfig', () => {
         );
         assert.equal(cfg.payload.unit_of_measurement, 'mW');
         assert.equal(cfg.payload.device_class, 'power');
+    });
+
+    it('buildAttributes carries unmodified DP id and common fields', () => {
+        const attrs = buildAttributes(
+            'alias.0.HN5.STATES.Personen.Sebastian.Ladegerät.handy',
+            obj({ type: 'boolean', role: 'state', write: false, unit: undefined }),
+        );
+        assert.equal(attrs.iob_id, 'alias.0.HN5.STATES.Personen.Sebastian.Ladegerät.handy');
+        assert.equal(attrs.iob_role, 'state');
+        assert.equal(attrs.iob_type, 'boolean');
+        assert.equal(attrs.iob_write, false);
+        assert.equal(attrs.iob_unit, undefined);
     });
 
     it('markAsDiagnostic sets entity_category', () => {

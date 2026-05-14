@@ -147,6 +147,36 @@ function applyOverrides(
     return { domain };
 }
 
+/**
+ * Build the attribute payload for `json_attributes_topic`. Carries the
+ * unmodified ioBroker DP id and the original common metadata so the user
+ * can reverse-look-up the source from inside HA (entity detail view,
+ * templates, automations).
+ */
+export function buildAttributes(dpId: string, obj: IobStateObjectMinimal): Record<string, unknown> {
+    const c = obj.common;
+    const attrs: Record<string, unknown> = { iob_id: dpId };
+    if (c.role) {
+        attrs.iob_role = c.role;
+    }
+    if (c.unit) {
+        attrs.iob_unit = c.unit;
+    }
+    if (c.type) {
+        attrs.iob_type = c.type;
+    }
+    if (c.min !== undefined) {
+        attrs.iob_min = c.min;
+    }
+    if (c.max !== undefined) {
+        attrs.iob_max = c.max;
+    }
+    if (c.write !== undefined) {
+        attrs.iob_write = c.write;
+    }
+    return attrs;
+}
+
 export function buildConfig(
     dpId: string,
     obj: IobStateObjectMinimal,
@@ -163,6 +193,10 @@ export function buildConfig(
         object_id: uniqueId,
         name: resolveName(dpId, obj, uniqueId),
         state_topic: `${config.mqtt.baseTopic}/state/${uniqueId}`,
+        // Attribute topic carries the original ioBroker DP id and metadata
+        // so the user can reverse-look-up the source without losing info to
+        // the entity-id sanitizer.
+        json_attributes_topic: `${config.mqtt.baseTopic}/attrs/${uniqueId}`,
         availability: {
             topic: `${config.mqtt.baseTopic}/status`,
             payload_available: 'online',

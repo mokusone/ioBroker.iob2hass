@@ -3,7 +3,7 @@ import { normalizeConfig } from './lib/config';
 import { MqttClient } from './lib/mqtt-client';
 import { CommandRouter } from './lib/command-router';
 import { Stats } from './lib/stats';
-import { buildConfig } from './lib/discovery';
+import { buildAttributes, buildConfig } from './lib/discovery';
 import { buildUniqueId } from './lib/sanitizer';
 import { isOwnWrite, buildSelfId } from './lib/loop-guard';
 import { collectExistingDiscoveryTopics, publishOrphanDeletions } from './lib/reconcile';
@@ -135,8 +135,13 @@ class Iob2HassAdapter extends Adapter {
                 if (this.runtime.mode === 'live') {
                     const topic = `${this.runtime.mqtt.discoveryPrefix}/${dc.domain}/${uniqueId}/config`;
                     await this.mqtt.publishRetained(topic, JSON.stringify(dc.payload));
+                    const attrsTopic = `${this.runtime.mqtt.baseTopic}/attrs/${uniqueId}`;
+                    await this.mqtt.publishRetained(attrsTopic, JSON.stringify(buildAttributes(dpId, minimal)));
                 } else if (this.runtime.mode === 'dry-run') {
                     this.log.info(`[dry-run] would publish ${dc.domain}/${uniqueId}: ${JSON.stringify(dc.payload)}`);
+                    this.log.info(
+                        `[dry-run] would publish attrs/${uniqueId}: ${JSON.stringify(buildAttributes(dpId, minimal))}`,
+                    );
                 }
             }
         }
