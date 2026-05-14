@@ -86,6 +86,11 @@ export class MqttClient {
         this.handler = handler;
     }
 
+    /** Read the currently-installed message handler (for save/restore patterns). */
+    getMessageHandler(): MessageHandler | undefined {
+        return this.handler;
+    }
+
     async close(): Promise<void> {
         if (!this.client) {
             return;
