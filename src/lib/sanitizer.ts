@@ -36,3 +36,17 @@ export function sanitize(dpId: string): string {
 export function buildUniqueId(dpId: string, entityPrefix: string): string {
     return `${entityPrefix}${sanitize(dpId)}`;
 }
+
+/**
+ * Split a DP-id into (parent-path, last-segment) so we can group entities
+ * of the same parent under a single HA device.
+ *   alias.0.HN5.ENERGY.NOW.barn_power  →  parent: "alias.0.HN5.ENERGY.NOW", last: "barn_power"
+ * If the DP has no parent (no dot), parent === dpId and last === ''.
+ */
+export function splitDpId(dpId: string): { parent: string; last: string } {
+    const i = dpId.lastIndexOf('.');
+    if (i <= 0) {
+        return { parent: dpId, last: '' };
+    }
+    return { parent: dpId.slice(0, i), last: dpId.slice(i + 1) };
+}

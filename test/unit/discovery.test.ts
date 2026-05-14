@@ -112,26 +112,39 @@ const baseConfig: RuntimeConfig = {
 };
 
 describe('buildConfig', () => {
-    it('builds switch with availability + per-DP device + command_topic + name=null', () => {
+    it('builds switch with parent-grouped device and last-segment as entity name', () => {
         const cfg = buildConfig('shelly.0.Relay0', obj({ type: 'boolean', write: true, name: 'Relay 0' }), baseConfig, 0);
         assert.equal(cfg.domain, 'switch');
         const p = cfg.payload;
         assert.equal(p.unique_id, 'iob_shelly_0_relay0');
         assert.equal(p.object_id, 'iob_shelly_0_relay0');
-        assert.equal(p.name, null);
+        assert.equal(p.name, 'Relay 0');  // friendly name from common.name
         assert.equal(p.state_topic, 'iob2hass/state/iob_shelly_0_relay0');
         assert.equal(p.command_topic, 'iob2hass/cmd/iob_shelly_0_relay0');
         assert.equal(p.json_attributes_topic, 'iob2hass/attrs/iob_shelly_0_relay0');
         assert.deepEqual(p.availability, { topic: 'iob2hass/status', payload_available: 'online', payload_not_available: 'offline' });
         const dev = p.device as Record<string, unknown>;
-        assert.deepEqual(dev.identifiers, ['iob2hass-0-iob_shelly_0_relay0']);
-        assert.equal(dev.name, 'iob_shelly_0_relay0');
+        // Device groups by parent path: shelly.0 — last segment "Relay0" → entity
+        assert.deepEqual(dev.identifiers, ['iob2hass-0-iob_shelly_0']);
+        assert.equal(dev.name, 'iob_shelly_0');
         assert.equal(dev.model, 'ioBroker Mirror');
         assert.equal(dev.via_device, undefined);
-        // payload_on/off are strings (HA-mqtt-switch validator expects strings,
-        // not booleans). Must match the JSON.stringify(true|false) we publish.
         assert.equal(p.payload_on, 'true');
         assert.equal(p.payload_off, 'false');
+    });
+
+    it('groups multiple DPs sharing a parent path into one HA device', () => {
+        const cfg1 = buildConfig('alias.0.HN5.ENERGY.NOW.barn_power', obj({ type: 'number', write: false, role: 'value.power', unit: 'W' }), baseConfig, 0);
+        const cfg2 = buildConfig('alias.0.HN5.ENERGY.NOW.house_power', obj({ type: 'number', write: false, role: 'value.power', unit: 'W' }), baseConfig, 0);
+        const dev1 = cfg1.payload.device as Record<string, unknown>;
+        const dev2 = cfg2.payload.device as Record<string, unknown>;
+        assert.deepEqual(dev1.identifiers, dev2.identifiers, 'shared parent path → shared device');
+        assert.equal(dev1.name, 'iob_alias_0_hn5_energy_now');
+        assert.equal(dev2.name, 'iob_alias_0_hn5_energy_now');
+        // Entity names differ → HA derives distinct entity_ids:
+        // sensor.iob_alias_0_hn5_energy_now_barn_power
+        // sensor.iob_alias_0_hn5_energy_now_house_power
+        assert.notEqual(cfg1.payload.unique_id, cfg2.payload.unique_id);
     });
 
     it('sensor for read-only number with power detection', () => {
@@ -152,7 +165,8 @@ describe('buildConfig', () => {
         );
         assert.equal(cfg.payload.unique_id, 'iob_alias_0_hn5_states_personen_sebastian_ladegeraet_handy');
         const dev = cfg.payload.device as Record<string, unknown>;
-        assert.equal(dev.name, 'iob_alias_0_hn5_states_personen_sebastian_ladegeraet_handy');
+        // Device groups by parent — parent of "...Handy" is "...Ladegerät"
+        assert.equal(dev.name, 'iob_alias_0_hn5_states_personen_sebastian_ladegeraet');
     });
 
     it('override unit patches auto-detected unit', () => {

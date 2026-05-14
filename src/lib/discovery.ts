@@ -1,5 +1,5 @@
 import type { DiscoveryConfig, HaDomain, IobStateObjectMinimal, OverrideEntry, RuntimeConfig } from '../types';
-import { buildUniqueId } from './sanitizer';
+import { buildUniqueId, sanitize, splitDpId } from './sanitizer';
 import { matches } from './matcher';
 
 function isDimmer(common: IobStateObjectMinimal['common']): boolean {
@@ -104,6 +104,17 @@ export function detectStateClass(obj: IobStateObjectMinimal): string | undefined
     return undefined;
 }
 
+function resolveFriendlyName(obj: IobStateObjectMinimal, entitySlugFallback: string, uniqueIdFallback: string): string {
+    const n = obj.common.name;
+    if (typeof n === 'string' && n.length > 0) {
+        return n;
+    }
+    if (n && typeof n === 'object') {
+        return n.en ?? n.de ?? Object.values(n)[0] ?? entitySlugFallback ?? uniqueIdFallback;
+    }
+    return entitySlugFallback || uniqueIdFallback;
+}
+
 function applyOverrides(
     target: Record<string, unknown>,
     dpId: string,
@@ -177,15 +188,29 @@ export function buildConfig(
     const deviceClass = detectDeviceClass(obj);
     const stateClass = detectStateClass(obj);
 
+    // Group entities by parent path. DP "alias.0.HN5.ENERGY.NOW.barn_power"
+    // → device-slug = "iob_alias_0_hn5_energy_now", entity-slug = "barn_power".
+    // HA composes entity_id = "<domain>.<device-slug>_<entity-slug>" which
+    // equals the full sanitized DP path → entity_id stays long and unique,
+    // while several DPs sharing a parent share a single HA device card.
+    const { parent, last } = splitDpId(dpId);
+    const hasParent = last !== '';
+    const deviceSlug = hasParent ? buildUniqueId(parent, config.entityPrefix) : uniqueId;
+    const entitySlug = hasParent ? sanitize(last) : '';
+
+    // Friendly name: prefer common.name (human-readable, e.g. "Barn Power"),
+    // fall back to the sanitized last-segment, fall back to uniqueId.
+    const friendlyName = resolveFriendlyName(obj, entitySlug, uniqueId);
+
     const payload: Record<string, unknown> = {
         unique_id: uniqueId,
         object_id: uniqueId,
-        // name=null tells HA to use device.name for the friendly name and
-        // entity_id, instead of "<device>_<entity>". Combined with a per-DP
-        // device whose name IS the full sanitized path, this yields
-        // entity_ids like switch.iob_alias_0_hn5_..._handy — preserving
-        // the full ioBroker DP path in the HA id.
-        name: null,
+        // Entity-name disambiguates inside a grouped device. With device.name
+        // = parent-slug and name = sanitized last-segment, HA's entity_id
+        // composition reconstructs the full sanitized DP path. If the DP
+        // has no parent (single-segment id, unusual in ioBroker), name=null
+        // and the device-slug equals the full path.
+        name: hasParent ? friendlyName : null,
         state_topic: `${config.mqtt.baseTopic}/state/${uniqueId}`,
         // Attribute topic carries the original ioBroker DP id and metadata
         // so the user can reverse-look-up the source without losing info to
@@ -197,14 +222,13 @@ export function buildConfig(
             payload_not_available: 'offline',
         },
         device: {
-            // Per-DP unique identifier — every mirror becomes its own HA
-            // device. The device name carries the full sanitized DP path so
-            // HA composes entity_id = <domain>.<device-name>.
+            // Per-parent unique identifier — all DPs of the same parent path
+            // share one HA device. device.name carries the parent slug so
+            // HA composes entity_id = <domain>.<parent_slug>_<entity_slug>.
             // NO via_device: HA bug #131551 creates a phantom "Unbenannter
             // Gerät" hub when via_device points at an unregistered device.
-            // Mirrors stay identifiable by manufacturer="iob2hass".
-            identifiers: [`iob2hass-${instance}-${uniqueId}`],
-            name: uniqueId,
+            identifiers: [`iob2hass-${instance}-${deviceSlug}`],
+            name: deviceSlug,
             manufacturer: 'iob2hass',
             model: 'ioBroker Mirror',
         },
