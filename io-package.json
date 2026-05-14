@@ -9,8 +9,8 @@
             }
         },
         "titleLang": {
-            "en": "ioBroker → Home Assistant Bridge",
-            "de": "ioBroker → Home Assistant Bridge"
+            "en": "Home Assistant Bridge",
+            "de": "Home Assistant Bridge"
         },
         "desc": {
             "en": "Mirrors selected ioBroker datapoints into Home Assistant via MQTT-Discovery",
