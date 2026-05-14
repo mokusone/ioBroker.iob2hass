@@ -205,6 +205,25 @@ describe('buildConfig', () => {
         assert.equal(attrs.iob_unit, undefined);
     });
 
+    it('binary_sensor payload_on/off explicitly "true"/"false" (matching JSON.stringify output)', () => {
+        const cfg = buildConfig('a.b', obj({ type: 'boolean', write: false }), baseConfig, 0);
+        assert.equal(cfg.domain, 'binary_sensor');
+        assert.equal(cfg.payload.payload_on, 'true');
+        assert.equal(cfg.payload.payload_off, 'false');
+    });
+
+    it('light payload_on/off explicitly "true"/"false" (matching JSON.stringify output)', () => {
+        const cfg = buildConfig(
+            'shelly.0.dimmer',
+            obj({ type: 'number', write: true, role: 'level.dimmer', min: 0, max: 100 }),
+            baseConfig,
+            0,
+        );
+        assert.equal(cfg.domain, 'light');
+        assert.equal(cfg.payload.payload_on, 'true');
+        assert.equal(cfg.payload.payload_off, 'false');
+    });
+
     it('markAsDiagnostic sets entity_category', () => {
         const cfg = buildConfig(
             'a.b',

@@ -230,10 +230,11 @@ export function buildConfig(
         payload.command_topic = `${config.mqtt.baseTopic}/cmd/${uniqueId}`;
     }
 
-    if (domain === 'switch') {
-        // HA's MQTT-switch validator accepts strings here, not JSON booleans.
-        // Adapter publishes state via JSON.stringify(true|false) → "true"/"false",
-        // so we set payload_on/off to those same strings for an exact match.
+    // Every domain that takes a boolean state needs payload_on/off as the
+    // exact string our publishMirrorState emits via JSON.stringify(true|false).
+    // Otherwise HA falls back to its default "ON"/"OFF" and our "true"/"false"
+    // payloads never match — entity stays "unknown" forever.
+    if (domain === 'switch' || domain === 'binary_sensor' || domain === 'light') {
         payload.payload_on = 'true';
         payload.payload_off = 'false';
     }
