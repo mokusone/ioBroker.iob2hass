@@ -1,0 +1,75 @@
+{
+    type: 'tabs',
+    items: {
+        connection: {
+            type: 'panel',
+            label: 'tab_connection',
+            items: {
+                'mqtt.host':            { type: 'text',     label: 'mqtt_host', newLine: true,  sm: 12, md: 6, lg: 4 },
+                'mqtt.port':            { type: 'number',   label: 'mqtt_port', min: 1, max: 65535, sm: 12, md: 3, lg: 2 },
+                'mqtt.tls':             { type: 'checkbox', label: 'mqtt_tls',  sm: 12, md: 3, lg: 2 },
+                'mqtt.user':            { type: 'text',     label: 'mqtt_user', newLine: true, sm: 12, md: 6, lg: 4 },
+                'mqtt.password':        { type: 'password', label: 'mqtt_password', sm: 12, md: 6, lg: 4 },
+                'mqtt.baseTopic':       { type: 'text',     label: 'mqtt_base_topic', newLine: true, sm: 12, md: 6, lg: 4 },
+                'mqtt.discoveryPrefix': { type: 'text',     label: 'mqtt_discovery_prefix', sm: 12, md: 6, lg: 4 },
+            },
+        },
+        behavior: {
+            type: 'panel',
+            label: 'tab_behavior',
+            items: {
+                mode: {
+                    type: 'select',
+                    label: 'mode',
+                    options: [
+                        { value: 'discover',  label: 'mode_discover' },
+                        { value: 'dry-run',   label: 'mode_dryrun' },
+                        { value: 'live',      label: 'mode_live' },
+                    ],
+                    sm: 12, md: 4, lg: 3,
+                },
+                entityPrefix:       { type: 'text',     label: 'entity_prefix', sm: 12, md: 4, lg: 3 },
+                autoDeleteOrphans:  { type: 'checkbox', label: 'auto_delete_orphans', newLine: true, sm: 12, md: 6, lg: 4 },
+                markAsDiagnostic:   { type: 'checkbox', label: 'mark_as_diagnostic', sm: 12, md: 6, lg: 4 },
+                verboseDiscoverLog: { type: 'checkbox', label: 'verbose_discover_log', newLine: true, sm: 12, md: 6, lg: 4 },
+                republishOnBoot:    { type: 'checkbox', label: 'republish_on_boot', sm: 12, md: 6, lg: 4 },
+            },
+        },
+        whitelist: {
+            type: 'panel',
+            label: 'tab_whitelist',
+            items: {
+                whitelist: {
+                    type: 'table',
+                    label: 'whitelist_label',
+                    items: [
+                        { attr: 'pattern', type: 'text',     title: 'col_pattern', width: '60%' },
+                        { attr: 'active',  type: 'checkbox', title: 'col_active',  width: '10%' },
+                        { attr: 'note',    type: 'text',     title: 'col_note',    width: '30%' },
+                    ],
+                },
+            },
+        },
+        overrides: {
+            type: 'panel',
+            label: 'tab_overrides',
+            items: {
+                overrides: {
+                    type: 'table',
+                    label: 'overrides_label',
+                    items: [
+                        { attr: 'pattern',      type: 'text',   title: 'col_pattern',      width: '25%' },
+                        { attr: 'domain',       type: 'text',   title: 'col_domain',       width: '10%' },
+                        { attr: 'unit',         type: 'text',   title: 'col_unit',         width: '10%' },
+                        { attr: 'role',         type: 'text',   title: 'col_role',         width: '10%' },
+                        { attr: 'device_class', type: 'text',   title: 'col_device_class', width: '15%' },
+                        { attr: 'state_class',  type: 'text',   title: 'col_state_class',  width: '15%' },
+                        { attr: 'min',          type: 'number', title: 'col_min',          width: '7%' },
+                        { attr: 'max',          type: 'number', title: 'col_max',          width: '8%' },
+                    ],
+                },
+            },
+        },
+    },
+    i18n: true,
+}
