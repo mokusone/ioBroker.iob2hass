@@ -16,6 +16,7 @@ class Iob2HassAdapter extends Adapter {
     private statsTracker!: Stats;
     private mirrors = new Map<string, MirrorEntry>();
     private selfId!: string;
+    private heartbeatTimer: NodeJS.Timeout | undefined;
 
     public constructor(options: Partial<AdapterOptions> = {}) {
         super({ ...options, name: 'iob2hass' });
@@ -48,12 +49,24 @@ class Iob2HassAdapter extends Adapter {
             baseTopic: this.runtime.mqtt.baseTopic,
         });
 
+        // Periodic heartbeat — runs regardless of MQTT state, so the user can
+        // see in the admin that the adapter process is alive.
+        this.heartbeatTimer = setInterval(() => {
+            void this.statsTracker.heartbeat();
+        }, 30_000);
+        await this.statsTracker.heartbeat();
+
         try {
             await this.mqtt.connect();
             await this.statsTracker.setConnection(true);
         } catch (e) {
             this.log.error(`MQTT connect failed: ${(e as Error).message}`);
             await this.statsTracker.setConnection(false);
+            // Terminate so js-controller restarts us with backoff. Without this
+            // the adapter would hang silently after the first failure.
+            this.terminate
+                ? this.terminate('MQTT connect failed', 11 /* START_IMMEDIATELY_AFTER_STOP */)
+                : process.exit(11);
             return;
         }
 
@@ -210,6 +223,10 @@ class Iob2HassAdapter extends Adapter {
 
     private async onUnload(callback: () => void): Promise<void> {
         try {
+            if (this.heartbeatTimer) {
+                clearInterval(this.heartbeatTimer);
+                this.heartbeatTimer = undefined;
+            }
             await this.mqtt?.close();
             await this.statsTracker?.setConnection(false);
         } catch {
