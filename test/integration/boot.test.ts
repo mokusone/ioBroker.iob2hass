@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import { tests } from '@iobroker/testing';
 
 tests.integration(process.cwd(), {
+    // Adapter terminates with code 11 (START_IMMEDIATELY_AFTER_STOP) when
+    // MQTT connect fails — intentional restart hint to js-controller. The
+    // testing harness sees no MQTT broker by default; this option keeps
+    // the default startup-test green while still verifying onReady runs.
+    allowedExitCodes: [11],
     defineAdditionalTests({ suite }) {
         suite('iob2hass smoke test', getHarness => {
             it.skip('boot pipeline runs (info.connection state gets created)', async function () {
