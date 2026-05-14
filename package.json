@@ -45,6 +45,7 @@
   "scripts": {
     "build:tsc": "tsc -p tsconfig.build.json",
     "build": "npm run build:tsc",
+    "prepare": "npm run build",
     "lint": "eslint -c eslint.config.mjs",
     "test:unit": "mocha 'test/unit/**/*.test.ts'",
     "test:integration": "mocha 'test/integration/**/*.test.ts' --timeout 30000",
