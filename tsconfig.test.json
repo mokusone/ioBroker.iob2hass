@@ -1,0 +1,11 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "module": "CommonJS",
+        "moduleResolution": "Node",
+        "noEmit": true,
+        "rootDir": ".",
+        "types": ["@iobroker/types", "node", "mocha"]
+    },
+    "include": ["src/**/*.ts", "test/**/*.ts"]
+}
