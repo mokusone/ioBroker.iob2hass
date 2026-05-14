@@ -54,20 +54,42 @@ export async function collectExistingDiscoveryTopics(
 }
 
 /**
- * For each existing topic whose unique_id is NOT in `keepUniqueIds`,
- * publishes an empty retained payload to delete it on the HA side.
- * Returns the list of topics that were deleted.
+ * Delete obsolete Discovery topics. Two cleanup classes:
+ *
+ * (1) **Domain conflict** — unique_id is in `currentTopicByUniqueId`, but
+ *     the existing topic path is different (e.g. binary_sensor/<uid>/config
+ *     vs. the current switch/<uid>/config after the user set write=true on
+ *     the source). Always deleted; HA would otherwise show the stale
+ *     entity beside the new one. Independent of `deleteUnknownUniqueIds`.
+ *
+ * (2) **Orphan** — unique_id has no entry in `currentTopicByUniqueId`
+ *     (mirror was removed from the whitelist or DP was deleted). Only
+ *     deleted when `deleteUnknownUniqueIds` is true (the autoDelete flag).
  */
 export async function publishOrphanDeletions(
     client: MqttClient,
     existingTopics: string[],
-    keepUniqueIds: Set<string>,
+    currentTopicByUniqueId: Map<string, string>,
+    deleteUnknownUniqueIds: boolean,
 ): Promise<string[]> {
     const deleted: string[] = [];
     for (const topic of existingTopics) {
         const match = topic.match(/\/([^/]+)\/config$/);
         const uniqueId = match?.[1];
-        if (uniqueId && !keepUniqueIds.has(uniqueId)) {
+        if (!uniqueId) {
+            continue;
+        }
+        const currentTopic = currentTopicByUniqueId.get(uniqueId);
+        if (currentTopic === topic) {
+            // Exact match with our active Discovery — keep.
+            continue;
+        }
+        if (currentTopic !== undefined) {
+            // Same unique_id, different topic — domain conflict. Always delete.
+            await client.publishRetained(topic, '');
+            deleted.push(topic);
+        } else if (deleteUnknownUniqueIds) {
+            // Unknown unique_id (orphan). Delete only with the flag.
             await client.publishRetained(topic, '');
             deleted.push(topic);
         }

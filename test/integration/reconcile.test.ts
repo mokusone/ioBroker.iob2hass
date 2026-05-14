@@ -38,7 +38,7 @@ describe('reconcile', function () {
         await c.close();
     });
 
-    it('publishes empty retained payload for orphans only', async () => {
+    it('orphan deletion: only deletes unknown unique_ids when flag is true', async () => {
         const c = new MqttClient({ host: '127.0.0.1', port: PORT, baseTopic: 'iob2hass-test' });
         await c.connect();
         await c.publishRetained(
@@ -53,8 +53,37 @@ describe('reconcile', function () {
         const all = await collectExistingDiscoveryTopics(c, 'homeassistant', 'iob2hass-0', 2000);
         assert.equal(all.length, 2);
 
-        const deleted = await publishOrphanDeletions(c, all, new Set(['iob_a']));
+        // Keep iob_a in current map. iob_b has no current topic — orphan.
+        const currentByUid = new Map([['iob_a', 'homeassistant/switch/iob_a/config']]);
+        const deleted = await publishOrphanDeletions(c, all, currentByUid, true);
         assert.deepEqual(deleted, ['homeassistant/sensor/iob_b/config']);
+
+        await c.close();
+    });
+
+    it('domain conflict: deletes stale topic for same unique_id under different domain regardless of flag', async () => {
+        const c = new MqttClient({ host: '127.0.0.1', port: PORT, baseTopic: 'iob2hass-test' });
+        await c.connect();
+        // Stale binary_sensor (from earlier discovery when write=false)
+        await c.publishRetained(
+            'homeassistant/binary_sensor/iob_a/config',
+            JSON.stringify({ unique_id: 'iob_a', device: { identifiers: ['iob2hass-0'] } }),
+        );
+        // The current published topic is the new switch/...
+        await c.publishRetained(
+            'homeassistant/switch/iob_a/config',
+            JSON.stringify({ unique_id: 'iob_a', device: { identifiers: ['iob2hass-0'] } }),
+        );
+
+        const all = await collectExistingDiscoveryTopics(c, 'homeassistant', 'iob2hass-0', 2000);
+        assert.equal(all.length, 2);
+
+        // Current map says iob_a is now under switch/. The binary_sensor entry
+        // must be deleted even with flag=false (it's a domain conflict, not
+        // an orphan).
+        const currentByUid = new Map([['iob_a', 'homeassistant/switch/iob_a/config']]);
+        const deleted = await publishOrphanDeletions(c, all, currentByUid, false);
+        assert.deepEqual(deleted, ['homeassistant/binary_sensor/iob_a/config']);
 
         await c.close();
     });

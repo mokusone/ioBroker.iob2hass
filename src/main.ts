@@ -77,8 +77,16 @@ class Iob2HassAdapter extends Adapter {
 
         await this.buildAndPublishMirrors();
 
-        if (this.runtime.autoDeleteOrphans && this.runtime.whitelist.length > 0) {
-            const keep = new Set(Array.from(this.mirrors.values()).map(m => m.uniqueId));
+        // Always scan for obsolete topics: domain conflicts (same unique_id,
+        // wrong topic — happens when the user flips common.write on a DP and
+        // the mirror switches between binary_sensor/switch) are deleted
+        // unconditionally. Full orphans (unique_id no longer in mirrors)
+        // only with the autoDeleteOrphans flag.
+        if (this.runtime.whitelist.length > 0) {
+            const currentByUid = new Map<string, string>();
+            for (const m of this.mirrors.values()) {
+                currentByUid.set(m.uniqueId, `${this.runtime.mqtt.discoveryPrefix}/${m.domain}/${m.uniqueId}/config`);
+            }
             const selfIdentifier = `iob2hass-${this.instanceNum}`;
             const existing = await collectExistingDiscoveryTopics(
                 this.mqtt,
@@ -86,9 +94,14 @@ class Iob2HassAdapter extends Adapter {
                 selfIdentifier,
                 2000,
             );
-            const deleted = await publishOrphanDeletions(this.mqtt, existing, keep);
+            const deleted = await publishOrphanDeletions(
+                this.mqtt,
+                existing,
+                currentByUid,
+                this.runtime.autoDeleteOrphans,
+            );
             if (deleted.length > 0) {
-                this.log.info(`Deleted ${deleted.length} orphan Discovery topics`);
+                this.log.info(`Deleted ${deleted.length} obsolete Discovery topics`);
             }
         }
 
