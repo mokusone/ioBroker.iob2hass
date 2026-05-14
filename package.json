@@ -1,0 +1,63 @@
+{
+  "name": "iobroker.iob2hass",
+  "version": "0.0.1",
+  "description": "Mirror selected ioBroker datapoints into Home Assistant via MQTT-Discovery",
+  "author": {
+    "name": "mokusone",
+    "email": "14061880+mokusone@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/mokusone/ioBroker.iob2hass",
+  "license": "MIT",
+  "keywords": ["ioBroker", "Home Assistant", "MQTT", "Bridge", "Mirror"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mokusone/ioBroker.iob2hass"
+  },
+  "dependencies": {
+    "@iobroker/adapter-core": "^3.3.2",
+    "mqtt": "^5.10.1"
+  },
+  "devDependencies": {
+    "@alcalzone/release-script": "^5.1.1",
+    "@alcalzone/release-script-plugin-iobroker": "^5.1.2",
+    "@alcalzone/release-script-plugin-license": "^5.1.1",
+    "@iobroker/adapter-dev": "^1.5.0",
+    "@iobroker/build-tools": "^3.0.1",
+    "@iobroker/eslint-config": "^2.2.0",
+    "@iobroker/legacy-testing": "^2.0.2",
+    "@iobroker/testing": "^5.2.2",
+    "@iobroker/types": "^7.0.7",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.10.5",
+    "aedes": "^0.51.3",
+    "mocha": "^11.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "main": "build/main.js",
+  "files": [
+    "admin{,/!(src)/**}/!(tsconfig|tsconfig.*|.eslintrc).{json,json5}",
+    "admin{,/!(src)/**}/*.{html,css,png,svg,jpg,js}",
+    "build/",
+    "io-package.json",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build:tsc": "tsc -p tsconfig.build.json",
+    "build": "npm run build:tsc",
+    "lint": "eslint -c eslint.config.mjs",
+    "test:unit": "mocha --require ts-node/register 'test/unit/**/*.test.ts' --exit",
+    "test:integration": "mocha --require ts-node/register 'test/integration/**/*.test.ts' --exit --timeout 30000",
+    "test:package": "mocha test/testPackageFiles.js --exit",
+    "test": "npm run test:unit && npm run test:integration && npm run test:package",
+    "release": "release-script",
+    "release-patch": "release-script patch --yes",
+    "release-minor": "release-script minor --yes",
+    "release-major": "release-script major --yes",
+    "translate": "translate-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/mokusone/ioBroker.iob2hass/issues"
+  },
+  "readmeFilename": "README.md"
+}
