@@ -124,7 +124,8 @@ describe('buildConfig', () => {
         assert.deepEqual(p.availability, { topic: 'iob2hass/status', payload_available: 'online', payload_not_available: 'offline' });
         const dev = p.device as Record<string, unknown>;
         assert.deepEqual(dev.identifiers, ['iob2hass-0']);
-        assert.equal(dev.name, 'ioBroker Bridge');
+        assert.equal(dev.name, 'iob');  // derived from entityPrefix=iob_
+        assert.equal(dev.model, 'ioBroker Bridge');
     });
 
     it('sensor for read-only number with power detection', () => {

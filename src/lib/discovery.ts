@@ -170,9 +170,14 @@ export function buildConfig(
         },
         device: {
             identifiers: [`iob2hass-${instance}`],
-            name: 'ioBroker Bridge',
+            // device.name becomes the entity-id prefix in HA's auto-naming.
+            // We derive it from entityPrefix (without trailing underscore) so
+            // the resulting entity_ids are <domain>.<prefix>_<entity>, e.g.
+            // binary_sensor.iob_handy — matching the architecture's iob_-prefix
+            // convention and the iobroker.hass-Fork filter pattern *.iob_*.
+            name: config.entityPrefix.replace(/_+$/, '') || 'iob',
             manufacturer: 'iob2hass',
-            model: 'Mirror-Bridge',
+            model: 'ioBroker Bridge',
         },
     };
 
