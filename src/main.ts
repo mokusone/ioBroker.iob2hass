@@ -5,7 +5,7 @@ import { CommandRouter } from './lib/command-router';
 import { Stats } from './lib/stats';
 import { buildAttributes, buildConfig } from './lib/discovery';
 import { buildUniqueId } from './lib/sanitizer';
-import { isOwnWrite, buildSelfId } from './lib/loop-guard';
+import { buildSelfId } from './lib/loop-guard';
 import { collectExistingDiscoveryTopics, publishOrphanDeletions } from './lib/reconcile';
 import type { RuntimeConfig, IobStateObjectMinimal, MirrorEntry } from './types';
 
@@ -196,10 +196,12 @@ class Iob2HassAdapter extends Adapter {
             return;
         }
 
-        if (isOwnWrite(state, this.selfId)) {
-            this.log.debug(`stateChange ${id} ignored (own write)`);
-            return;
-        }
+        // Note: we deliberately do NOT filter "own writes" here. For DPs
+        // without a real actor behind them (e.g. alias to a user variable
+        // in 0_userdata) the only event after setForeignStateAsync is our
+        // own ack=false echo — filtering it would leave HA stuck on the old
+        // state forever. There is no real MQTT loop risk either: HA's
+        // mqtt-switch does not republish command_topic on state_topic echo.
         const uniqueId = buildUniqueId(id, this.runtime.entityPrefix);
         const m = this.mirrors.get(uniqueId);
         this.log.debug(

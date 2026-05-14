@@ -127,7 +127,11 @@ describe('buildConfig', () => {
         assert.deepEqual(dev.identifiers, ['iob2hass-0-iob_shelly_0_relay0']);
         assert.equal(dev.name, 'iob_shelly_0_relay0');
         assert.equal(dev.model, 'ioBroker Mirror');
-        assert.equal(dev.via_device, 'iob2hass-0');
+        assert.equal(dev.via_device, undefined);
+        // payload_on/off are strings (HA-mqtt-switch validator expects strings,
+        // not booleans). Must match the JSON.stringify(true|false) we publish.
+        assert.equal(p.payload_on, 'true');
+        assert.equal(p.payload_off, 'false');
     });
 
     it('sensor for read-only number with power detection', () => {

@@ -200,14 +200,13 @@ export function buildConfig(
             // Per-DP unique identifier — every mirror becomes its own HA
             // device. The device name carries the full sanitized DP path so
             // HA composes entity_id = <domain>.<device-name>.
+            // NO via_device: HA bug #131551 creates a phantom "Unbenannter
+            // Gerät" hub when via_device points at an unregistered device.
+            // Mirrors stay identifiable by manufacturer="iob2hass".
             identifiers: [`iob2hass-${instance}-${uniqueId}`],
             name: uniqueId,
             manufacturer: 'iob2hass',
             model: 'ioBroker Mirror',
-            // via_device groups all mirror devices visually in HA under one
-            // logical hub. The hub itself is registered implicitly by HA on
-            // first sighting.
-            via_device: `iob2hass-${instance}`,
         },
     };
 
@@ -232,8 +231,11 @@ export function buildConfig(
     }
 
     if (domain === 'switch') {
-        payload.payload_on = true;
-        payload.payload_off = false;
+        // HA's MQTT-switch validator accepts strings here, not JSON booleans.
+        // Adapter publishes state via JSON.stringify(true|false) → "true"/"false",
+        // so we set payload_on/off to those same strings for an exact match.
+        payload.payload_on = 'true';
+        payload.payload_off = 'false';
     }
 
     if (domain === 'light' && obj.common.max !== undefined) {
