@@ -35,16 +35,22 @@ export class MqttClient {
         });
 
         await new Promise<void>((resolve, reject) => {
-            const onConnect = (): void => {
-                this.client!.removeListener('error', onError);
+            const c = this.client!;
+            let settled = false;
+            c.once('connect', () => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
                 resolve();
-            };
-            const onError = (err: Error): void => {
-                this.client!.removeListener('connect', onConnect);
+            });
+            c.once('error', (err: Error) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
                 reject(err);
-            };
-            this.client!.once('connect', onConnect);
-            this.client!.once('error', onError);
+            });
         });
 
         await this.publishRetained(statusTopic, 'online');
@@ -60,17 +66,13 @@ export class MqttClient {
 
     async publishRetained(topic: string, payload: string): Promise<void> {
         await new Promise<void>((resolve, reject) => {
-            this.client!.publish(topic, payload, { retain: true, qos: 0 }, err =>
-                err ? reject(err) : resolve(),
-            );
+            this.client!.publish(topic, payload, { retain: true, qos: 0 }, err => (err ? reject(err) : resolve()));
         });
     }
 
     async publish(topic: string, payload: string): Promise<void> {
         await new Promise<void>((resolve, reject) => {
-            this.client!.publish(topic, payload, { retain: false, qos: 0 }, err =>
-                err ? reject(err) : resolve(),
-            );
+            this.client!.publish(topic, payload, { retain: false, qos: 0 }, err => (err ? reject(err) : resolve()));
         });
     }
 
@@ -85,7 +87,9 @@ export class MqttClient {
     }
 
     async close(): Promise<void> {
-        if (!this.client) return;
+        if (!this.client) {
+            return;
+        }
         const statusTopic = `${this.opts.baseTopic}/status`;
         await this.publishRetained(statusTopic, 'offline').catch(() => undefined);
         await new Promise<void>(resolve => this.client!.end(false, {}, () => resolve()));

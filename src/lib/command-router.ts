@@ -28,7 +28,9 @@ export class CommandRouter {
 
     async handleMessage(topic: string, payload: string): Promise<void> {
         const prefix = `${this.baseTopic}/cmd/`;
-        if (!topic.startsWith(prefix)) return;
+        if (!topic.startsWith(prefix)) {
+            return;
+        }
         const uniqueId = topic.slice(prefix.length).split('/')[0];
         const ref = this.mirrors.get(uniqueId);
         if (!ref) {
@@ -50,8 +52,12 @@ export class CommandRouter {
 
 function parsePayload(raw: string, type: string | undefined): unknown {
     if (type === 'boolean') {
-        if (raw === 'true' || raw === '1' || raw === 'ON') return true;
-        if (raw === 'false' || raw === '0' || raw === 'OFF') return false;
+        if (raw === 'true' || raw === '1' || raw === 'ON') {
+            return true;
+        }
+        if (raw === 'false' || raw === '0' || raw === 'OFF') {
+            return false;
+        }
         return raw;
     }
     if (type === 'number') {

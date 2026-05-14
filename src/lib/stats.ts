@@ -17,9 +17,7 @@ export class Stats {
     async reset(): Promise<void> {
         this.counters = { subscribed: 0, published: 0, unmapped: 0, errors: 0 };
         await Promise.all(
-            (Object.keys(this.counters) as StatKey[]).map(k =>
-                this.adapter.setStateAsync(`stats.${k}`, 0, true),
-            ),
+            (Object.keys(this.counters) as StatKey[]).map(k => this.adapter.setStateAsync(`stats.${k}`, 0, true)),
         );
     }
 

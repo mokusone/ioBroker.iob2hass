@@ -2,9 +2,7 @@ const REGEX_SPECIAL = /[.+?^${}()|[\]\\]/g;
 
 /** Convert a glob (with only `*` as wildcard) into an anchored RegExp. */
 export function globToRegex(pattern: string): RegExp {
-    const escaped = pattern
-        .replace(REGEX_SPECIAL, '\\$&')
-        .replace(/\*/g, '.*');
+    const escaped = pattern.replace(REGEX_SPECIAL, '\\$&').replace(/\*/g, '.*');
     return new RegExp(`^${escaped}$`);
 }
 

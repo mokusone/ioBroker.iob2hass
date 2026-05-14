@@ -12,9 +12,15 @@ export async function collectExistingDiscoveryTopics(
 ): Promise<string[]> {
     const found: string[] = [];
     client.onMessage((topic, payload) => {
-        if (!topic.startsWith(`${discoveryPrefix}/`)) return;
-        if (!topic.endsWith('/config')) return;
-        if (payload === '') return;
+        if (!topic.startsWith(`${discoveryPrefix}/`)) {
+            return;
+        }
+        if (!topic.endsWith('/config')) {
+            return;
+        }
+        if (payload === '') {
+            return;
+        }
         try {
             const parsed = JSON.parse(payload);
             const ids = parsed?.device?.identifiers as string[] | undefined;

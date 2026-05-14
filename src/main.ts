@@ -80,7 +80,9 @@ class Iob2HassAdapter extends Adapter {
         }
 
         for (const w of this.runtime.whitelist) {
-            if (!w.active) continue;
+            if (!w.active) {
+                continue;
+            }
             await this.subscribeForeignStatesAsync(w.pattern);
             await this.statsTracker.incr('subscribed');
         }
@@ -90,9 +92,7 @@ class Iob2HassAdapter extends Adapter {
         await this.subscribeStatesAsync('cmd.cleanup');
 
         await this.statsTracker.heartbeat();
-        this.log.info(
-            `Adapter ready, mode=${this.runtime.mode}, mirrors=${this.mirrors.size}`,
-        );
+        this.log.info(`Adapter ready, mode=${this.runtime.mode}, mirrors=${this.mirrors.size}`);
     }
 
     private async buildAndPublishMirrors(): Promise<void> {
@@ -100,13 +100,19 @@ class Iob2HassAdapter extends Adapter {
         this.cmd.clear();
         const allKeep = new Set<string>();
         for (const w of this.runtime.whitelist) {
-            if (!w.active) continue;
+            if (!w.active) {
+                continue;
+            }
             const objects = await this.getForeignObjectsAsync(w.pattern, 'state');
             for (const [dpId, obj] of Object.entries(objects ?? {})) {
-                if (!obj) continue;
+                if (!obj) {
+                    continue;
+                }
                 const minimal: IobStateObjectMinimal = { common: (obj as any).common ?? {} };
                 const uniqueId = buildUniqueId(dpId, this.runtime.entityPrefix);
-                if (allKeep.has(uniqueId)) continue;
+                if (allKeep.has(uniqueId)) {
+                    continue;
+                }
                 const dc = buildConfig(dpId, minimal, this.runtime, this.instanceNum);
                 const entry: MirrorEntry = { dpId, uniqueId, domain: dc.domain, obj: minimal };
                 this.mirrors.set(uniqueId, entry);
@@ -117,9 +123,7 @@ class Iob2HassAdapter extends Adapter {
                     const topic = `${this.runtime.mqtt.discoveryPrefix}/${dc.domain}/${uniqueId}/config`;
                     await this.mqtt.publishRetained(topic, JSON.stringify(dc.payload));
                 } else if (this.runtime.mode === 'dry-run') {
-                    this.log.info(
-                        `[dry-run] would publish ${dc.domain}/${uniqueId}: ${JSON.stringify(dc.payload)}`,
-                    );
+                    this.log.info(`[dry-run] would publish ${dc.domain}/${uniqueId}: ${JSON.stringify(dc.payload)}`);
                 }
             }
         }
@@ -159,11 +163,10 @@ class Iob2HassAdapter extends Adapter {
         }
     }
 
-    private async onStateChange(
-        id: string,
-        state: ioBroker.State | null | undefined,
-    ): Promise<void> {
-        if (!state) return;
+    private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
+        if (!state) {
+            return;
+        }
 
         if (id === `${this.namespace}.cmd.cleanup` && state.val === true && state.ack === false) {
             await this.cleanupAllDiscoveryTopics();
@@ -171,7 +174,9 @@ class Iob2HassAdapter extends Adapter {
             return;
         }
 
-        if (isOwnWrite(state, this.selfId)) return;
+        if (isOwnWrite(state, this.selfId)) {
+            return;
+        }
         const uniqueId = buildUniqueId(id, this.runtime.entityPrefix);
         const m = this.mirrors.get(uniqueId);
         if (!m) {
@@ -183,7 +188,9 @@ class Iob2HassAdapter extends Adapter {
             }
             return;
         }
-        if (this.runtime.mode !== 'live') return;
+        if (this.runtime.mode !== 'live') {
+            return;
+        }
         await this.publishMirrorState(m, state.val);
     }
 
@@ -214,8 +221,7 @@ class Iob2HassAdapter extends Adapter {
 }
 
 if (require.main !== module) {
-    module.exports = (options: Partial<AdapterOptions> | undefined) =>
-        new Iob2HassAdapter(options);
+    module.exports = (options: Partial<AdapterOptions> | undefined) => new Iob2HassAdapter(options);
 } else {
     new Iob2HassAdapter();
 }

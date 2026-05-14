@@ -35,7 +35,9 @@ function pickBool(v: unknown, dflt: boolean): boolean {
 }
 
 function normWhitelist(raw: unknown): WhitelistEntry[] {
-    if (!Array.isArray(raw)) return [];
+    if (!Array.isArray(raw)) {
+        return [];
+    }
     return raw
         .map((e: any) => ({
             pattern: typeof e?.pattern === 'string' ? e.pattern.trim() : '',
@@ -46,7 +48,9 @@ function normWhitelist(raw: unknown): WhitelistEntry[] {
 }
 
 function normOverrides(raw: unknown): OverrideEntry[] {
-    if (!Array.isArray(raw)) return [];
+    if (!Array.isArray(raw)) {
+        return [];
+    }
     return raw
         .map((e: any) => ({
             pattern: typeof e?.pattern === 'string' ? e.pattern.trim() : '',
